@@ -9,6 +9,7 @@ def train_model(model,optimizer,train_dataloader,val_dataloader,criterion,n_epoc
         train_loss = 0 
         total_train = 0 
         for images, labels in train_dataloader:
+            optimizer.zero_grad()
             out = model(images)
             loss = criterion(out,labels)
             loss.backward()
