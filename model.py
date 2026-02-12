@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class EmotionCNN(nn.Module):
+class CNNEmotions(nn.Module):
     def __init__(self, num_classes=7):
-        super(EmotionCNN, self).__init__()
+        super(CNNEmotions, self).__init__()
 
         # ----------- Convolutional Block 1 -----------
         self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)
