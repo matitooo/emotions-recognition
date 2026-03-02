@@ -9,8 +9,8 @@ from model_utils import train_model
 train_path = 'data/train/train.csv'
 df_train = pd.read_csv(train_path)
 X,y = data_preprocessing(df_train)
-print(X[0].shape)
 train_loader, val_loader = tensor_batch_processing(X,y,batch_size=64)
+print(len(train_loader))
 model = CNNEmotions()
 optim = optimizer = Adam(model.parameters(), lr=0.001)
 n_epochs = 100

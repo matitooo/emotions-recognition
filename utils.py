@@ -20,7 +20,7 @@ def data_preprocessing(dataset):
     return X,y
     
 def tensor_batch_processing(X,y,batch_size):
-    X_small,X_res,y_small,y_res = train_test_split(X,y,test_size=0.30,shuffle=True,random_state=42)
+    X_small,X_res,y_small,y_res = train_test_split(X,y,test_size=0.80,shuffle=True,random_state=42)
     X_train,X_val,y_train,y_val = train_test_split(X_small,y_small,test_size=0.2)
     X_train = torch.tensor(X_train, dtype=torch.float32)
     X_val   = torch.tensor(X_val, dtype=torch.float32)
