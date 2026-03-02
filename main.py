@@ -39,7 +39,7 @@ def main():
         X,
         y,
         batch_size=64,
-        num_workers=4
+        num_workers=2
     )
 
     print(f"Train batches: {len(train_loader)}")

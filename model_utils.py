@@ -29,7 +29,7 @@ def train_model(model, optimizer, train_loader, val_loader, criterion, n_epochs)
 
             optimizer.zero_grad()
 
-            with autocast(enabled=torch.cuda.is_available()):
+            with autocast(device_type="cuda", enabled=torch.cuda.is_available()):
                 outputs = model(images)
                 loss = criterion(outputs, labels)
 
