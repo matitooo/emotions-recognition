@@ -1,37 +1,69 @@
-from torch.nn import CrossEntropyLoss
 import torch
+from torch.amp import autocast, GradScaler
 from tqdm import tqdm
 
-def train_model(model,optimizer,train_dataloader,val_dataloader,criterion,n_epochs):
+
+def train_model(model, optimizer, train_loader, val_loader, criterion, n_epochs):
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+
+    model.to(device)
+
+    scaler = GradScaler(enabled=torch.cuda.is_available())
+
+    
+    torch.backends.cudnn.benchmark = True
+
     for epoch in tqdm(range(n_epochs)):
+
+        
         model.train()
-        optimizer.zero_grad()
-        train_loss = 0 
-        total_train = 0 
-        for images, labels in train_dataloader:
+        train_loss = 0.0
+        total_train = 0
+
+        for images, labels in train_loader:
+
+            images = images.to(device, non_blocking=True)
+            labels = labels.to(device, non_blocking=True)
+
             optimizer.zero_grad()
-            out = model(images)
-            loss = criterion(out,labels)
-            loss.backward()
-                               
+
+            with autocast(enabled=torch.cuda.is_available()):
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+
             train_loss += loss.item() * images.size(0)
             total_train += images.size(0)
-            optimizer.step()
-        print(f"Epoch {epoch+1}/{n_epochs} | Train Loss: {train_loss/total_train:.4f}")    
-        if epoch%10 == 0:
+
+        train_loss /= total_train
+
+        print(f"Epoch {epoch+1}/{n_epochs} | Train Loss: {train_loss:.4f}")
+
+        if epoch % 10 == 0:
+
             model.eval()
-            val_loss = 0
-            total = 0
+            val_loss = 0.0
+            total_val = 0
 
             with torch.no_grad():
-                for images, labels in val_dataloader:
+                for images, labels in val_loader:
+
+                    images = images.to(device, non_blocking=True)
+                    labels = labels.to(device, non_blocking=True)
+
                     outputs = model(images)
                     loss = criterion(outputs, labels)
 
                     val_loss += loss.item() * images.size(0)
-                    total += images.size(0)
+                    total_val += images.size(0)
 
-            val_loss /= total
-            print(f"Epoch {epoch+1}/{n_epochs} | Validation Loss: {val_loss:.4f}")
+            val_loss /= total_val
+
+            print(f"Validation Loss: {val_loss:.4f}")
 
     return model
