@@ -6,7 +6,8 @@ import torch
 def data_preprocessing(dataset):
     X = []
     y = []
-    for i in range(dataset.shape[0]):
+    n = dataset.shape[0]
+    for i in range(n):
         emotion = dataset.iloc[i]['label']
         path = dataset.iloc[i]['path']
         img = cv2.imread(path,cv2.IMREAD_GRAYSCALE)

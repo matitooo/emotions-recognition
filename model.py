@@ -7,97 +7,73 @@ class CNNEmotions(nn.Module):
     def __init__(self, num_classes=7):
         super(CNNEmotions, self).__init__()
 
-        # ----------- Convolutional Block 1 -----------
-        self.conv1 = nn.Conv2d(1, 96, kernel_size=11, stride=4, padding=2)
-        self.bn1   = nn.BatchNorm2d(96)
-        self.pool1 = nn.MaxPool2d(kernel_size=3, stride=2)
-        self.drop1 = nn.Dropout(0.25)
+        # ----------- Block 1 -----------
+        self.conv1 = nn.Conv2d(1, 64, kernel_size=3, padding=1)
+        self.bn1   = nn.BatchNorm2d(64)
 
-        # ----------- Convolutional Block 2 -----------
-        self.conv2 = nn.Conv2d(96, 256, kernel_size=5, padding=2)
-        self.bn2   = nn.BatchNorm2d(256)
-        self.pool2 = nn.MaxPool2d(kernel_size=3, stride=2)
-        self.drop2 = nn.Dropout(0.25)
+        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
+        self.bn2   = nn.BatchNorm2d(64)
 
-        # ----------- Convolutional Block 3 -----------
-        self.conv3 = nn.Conv2d(256, 384, kernel_size=3, padding=1)
-        self.bn3   = nn.BatchNorm2d(384)
-        self.drop3 = nn.Dropout(0.25)
+        self.pool1 = nn.MaxPool2d(2, 2)
 
-        # ----------- Convolutional Block 4 -----------
-        self.conv4 = nn.Conv2d(384, 384, kernel_size=3, padding=1)
-        self.bn4   = nn.BatchNorm2d(384)
-        self.drop4 = nn.Dropout(0.25)
+        # ----------- Block 2 -----------
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+        self.bn3   = nn.BatchNorm2d(128)
 
-        # ----------- Convolutional Block 5 -----------
-        self.conv5 = nn.Conv2d(384, 256, kernel_size=3, padding=1)
+        self.conv4 = nn.Conv2d(128, 128, kernel_size=3, padding=1)
+        self.bn4   = nn.BatchNorm2d(128)
+
+        self.pool2 = nn.MaxPool2d(2, 2)
+
+        # ----------- Block 3 -----------
+        self.conv5 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
         self.bn5   = nn.BatchNorm2d(256)
-        self.pool5 = nn.MaxPool2d(kernel_size=3, stride=2)
-        self.drop5 = nn.Dropout(0.25)
 
-        # Adaptive pooling per input 48x48
-        self.adaptive_pool = nn.AdaptiveAvgPool2d((2, 2))
+        self.conv6 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
+        self.bn6   = nn.BatchNorm2d(256)
+
+        self.pool3 = nn.MaxPool2d(2, 2)
+
+        # After pooling:
+        # 48 → 24 → 12 → 6
+        # Final feature map: (B, 256, 6, 6)
 
         # ----------- Fully Connected -----------
-        self.fc1 = nn.Linear(256 * 2 * 2, 4096)
-        self.bn6 = nn.BatchNorm1d(4096)
-        self.drop6 = nn.Dropout(0.5)
+        self.flatten = nn.Flatten()
 
-        self.fc2 = nn.Linear(4096, 4096)
-        self.bn7 = nn.BatchNorm1d(4096)
-        self.drop7 = nn.Dropout(0.5)
+        self.fc1 = nn.Linear(256 * 6 * 6, 128)
+        self.bn7 = nn.BatchNorm1d(128)
 
-        self.fc3 = nn.Linear(4096, num_classes)
+        self.dropout = nn.Dropout(0.0)  # rate=0 as in paper
+
+        self.fc2 = nn.Linear(128, num_classes)
 
         self._initialize_weights()
-
 
     def forward(self, x):
 
         # Block 1
-        x = F.relu(self.conv1(x))
-        x = self.bn1(x)
+        x = F.elu(self.bn1(self.conv1(x)))
+        x = F.elu(self.bn2(self.conv2(x)))
         x = self.pool1(x)
-        x = self.drop1(x)
 
         # Block 2
-        x = F.relu(self.conv2(x))
-        x = self.bn2(x)
+        x = F.elu(self.bn3(self.conv3(x)))
+        x = F.elu(self.bn4(self.conv4(x)))
         x = self.pool2(x)
-        x = self.drop2(x)
 
         # Block 3
-        x = F.relu(self.conv3(x))
-        x = self.bn3(x)
-        x = self.drop3(x)
-
-        # Block 4
-        x = F.relu(self.conv4(x))
-        x = self.bn4(x)
-        x = self.drop4(x)
-
-        # Block 5
-        x = F.relu(self.conv5(x))
-        x = self.bn5(x)
-        x = self.pool5(x)
-        x = self.drop5(x)
-
-        # Adaptive Pool
-        x = self.adaptive_pool(x)
-
-        # Flatten
-        x = torch.flatten(x, 1)
+        x = F.elu(self.bn5(self.conv5(x)))
+        x = F.elu(self.bn6(self.conv6(x)))
+        x = self.pool3(x)
 
         # Fully Connected
-        x = F.relu(self.fc1(x))
-        x = self.bn6(x)
-        x = self.drop6(x)
+        x = self.flatten(x)
 
-        x = F.relu(self.fc2(x))
-        x = self.bn7(x)
-        x = self.drop7(x)
+        x = F.elu(self.bn7(self.fc1(x)))
+        x = self.dropout(x)
 
-        x = self.fc3(x)
+        x = self.fc2(x)  # no softmax (use CrossEntropyLoss)
 
         return x
 
